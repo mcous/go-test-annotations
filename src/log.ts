@@ -1,14 +1,12 @@
-import * as core from '@actions/core'
+import { debug, error, notice, warning } from '@actions/core'
 
 import type { Annotation } from './annotation.js'
 
+const log = { debug, warning, error, notice }
+
 const annotate = (annotation: Annotation): void => {
   const { level, message, ...props } = annotation
-  core[level](message, props)
+  log[level](message, props)
 }
 
-const debug = (message: string): void => {
-  core.debug(message)
-}
-
-export { annotate, debug }
+export { annotate, log }
