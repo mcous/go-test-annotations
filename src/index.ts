@@ -1,52 +1,27 @@
-import { getAnnotations } from './get-annotations.js'
-import { annotate, log } from './log.js'
-import { readEvents } from './read-events.js'
-import { readRerunReport } from './read-rerun-report.js'
-import {
-  addEventToSummary,
-  createSuiteSummary,
-  type SuiteSummary,
-} from './suite-summary.js'
-import { parseTestEvent } from './test-event.js'
+import type { Annotation } from './actions-core.js'
+import { createAnnotations } from './annotations.js'
+import { readRerunReport } from './rerun-report.js'
+import { createSuiteSummary } from './suite-summary.js'
+import { readTestReport } from './test-report.js'
 
+/** Input options used to generate annotations. */
 interface GoTestAnnotationOptions {
   testReport: string
   rerunFailsReport: string
 }
 
+/** Given test reports, log annotations to GitHub Actions. */
 const goTestAnnotations = async ({
   testReport,
   rerunFailsReport,
-}: GoTestAnnotationOptions): Promise<void> => {
+}: GoTestAnnotationOptions): Promise<Annotation[]> => {
   const [suiteSummary, reruns] = await Promise.all([
-    buildSuiteSummary(readEvents(testReport)),
+    createSuiteSummary(readTestReport(testReport)),
     readRerunReport(rerunFailsReport),
   ])
 
-  const annotations = getAnnotations(suiteSummary, reruns)
-
-  for (const annotation of annotations) {
-    annotate(annotation)
-  }
-}
-
-const buildSuiteSummary = async (
-  rawEvents: AsyncIterable<unknown>,
-): Promise<SuiteSummary> => {
-  let summary = createSuiteSummary()
-
-  for await (const rawEvent of rawEvents) {
-    const [error, event] = parseTestEvent(rawEvent)
-
-    if (error) {
-      log.debug(`Unexpected error parsing test event: ${error}`)
-    }
-
-    summary = addEventToSummary(summary, event)
-  }
-
-  return summary
+  return createAnnotations(suiteSummary, reruns)
 }
 
 export { type GoTestAnnotationOptions, goTestAnnotations }
-export { getInput, setFailed } from '@actions/core'
+export type { Annotation } from './actions-core.js'

@@ -19,11 +19,9 @@
   "license": "MIT",
   "author": "Michael Cousins <michael@cousins.io> (https://michael.cousins.io)",
   "type": "commonjs",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "scripts": {
     "all": "pnpm run build && pnpm run check && pnpm run format && pnpm run test:once",
-    "build": "tsup src/index.ts --format cjs --target node20 --dts --sourcemap --clean",
+    "build": "esbuild src/main.ts --bundle --format=cjs --platform=node --target=node20 --outdir=dist",
     "check": "tsc",
     "format": "eslint . --fix && prettier . --write",
     "lint": "eslint . && prettier . --check",
@@ -40,7 +38,6 @@
     "eslint": "9.23.0",
     "prettier": "3.5.3",
     "tempy": "^3.1.0",
-    "tsup": "^8.4.0",
     "typescript": "5.8.2",
     "valibot": "^1.0.0",
     "vitest": "^3.0.9"

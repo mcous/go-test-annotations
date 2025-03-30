@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises'
 import os from 'node:os'
 
+/** Re-run data for a given test. */
 interface Rerun {
   packageName: string
   testName: string
@@ -9,8 +10,9 @@ interface Rerun {
 }
 
 const RERUN_RE =
-  /^(?<packageName>[\w./]+)\.(?<testName>[\w./]+): (?<runs>\d+) runs, (?<failures>\d+) failures$/
+  /^(?<packageName>[\w./]+)\.(?<testName>[\w./]+): (?<runs>\d+) run(?:s)?, (?<failures>\d+) failure(?:s)?$/
 
+/** Read `gotestsum`'s re-run report into a list of re-runs by test. */
 const readRerunReport = async (rerunReport: string): Promise<Rerun[]> => {
   if (rerunReport === '') {
     return []

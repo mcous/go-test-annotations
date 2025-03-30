@@ -1,23 +1,24 @@
 import os from 'node:os'
 import path from 'node:path'
 
-import type { Annotation } from './annotation.js'
-import type { Rerun } from './read-rerun-report.js'
-import type { SuiteSummary, TestStatus } from './suite-summary.js'
+import type { Annotation } from './actions-core'
+import type { Rerun } from './rerun-report.js'
+import type { SuiteSummary, TestSummary } from './suite-summary.js'
 
 const GITHUB_REPO_RE = /^github\.com\/[^/]+\/[^/]+\//u
 const FILENAME_RE = /(?<filename>\S+_test.go):(?<lineNumber>\d+)/iu
 
-const getAnnotations = (
+/** Given a suite summary, create annotation objects to be logged. */
+const createAnnotations = (
   suiteSummary: SuiteSummary,
   reruns: Rerun[],
 ): Annotation[] => {
   const annotations: Annotation[] = []
 
-  for (const [packageName, testsByName] of suiteSummary.packages) {
+  for (const [packageName, packageSummary] of suiteSummary) {
     const packagePath = getPackagePath(packageName)
 
-    for (const [testName, testSummary] of testsByName) {
+    for (const [testName, testSummary] of packageSummary) {
       const rerun = reruns.find(
         (r) => r.packageName === packageName && r.testName === testName,
       )
@@ -25,8 +26,7 @@ const getAnnotations = (
       const testAnnotation = getAnnotationFromOutput(
         `${packageName}.${testName}`,
         packagePath,
-        testSummary.status,
-        testSummary.output,
+        testSummary,
         rerun,
       )
 
@@ -46,15 +46,14 @@ const getPackagePath = (packageName: string): string => {
 const getAnnotationFromOutput = (
   name: string,
   packagePath: string,
-  status: TestStatus,
-  allRunsOutput: string[],
+  testSummary: TestSummary,
   rerun: Rerun | undefined = undefined,
 ): Annotation | undefined => {
-  if (status !== 'fail') {
+  if (testSummary.status !== 'fail') {
     return undefined
   }
 
-  const output = joinOutput(allRunsOutput)
+  const output = joinOutput(testSummary.output)
   const heading = rerun && rerun.runs !== rerun.failures ? 'FLAKY' : 'FAIL'
   const filenameMatch = FILENAME_RE.exec(output)
   const filename = filenameMatch?.groups?.filename
@@ -86,4 +85,4 @@ const joinOutput = (allRunsOutput: string[]): string => {
   return outputWithTitles.join(os.EOL)
 }
 
-export { getAnnotations }
+export { createAnnotations }

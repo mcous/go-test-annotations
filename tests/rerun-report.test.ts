@@ -3,7 +3,7 @@ import fs from 'node:fs/promises'
 import { temporaryFileTask } from 'tempy'
 import { expect, it as baseIt } from 'vitest'
 
-import * as Subject from '../src/read-rerun-report.js'
+import * as Subject from '../src/rerun-report.js'
 
 const it = baseIt.extend<{ temporaryFile: string }>({
   temporaryFile: async ({}, use) => {
@@ -75,6 +75,26 @@ it('reads multiple reruns', async ({ temporaryFile }) => {
       testName: 'TestGreet/wave',
       runs: 2,
       failures: 2,
+    },
+  ])
+})
+
+it('tolerates pluralization in case this changes in the future', async ({
+  temporaryFile,
+}) => {
+  await fs.writeFile(
+    temporaryFile,
+    'github.com/org/repo/greet.TestGreet: 3 run, 1 failure',
+    'utf8',
+  )
+  const result = await Subject.readRerunReport(temporaryFile)
+
+  expect(result).toEqual([
+    {
+      packageName: 'github.com/org/repo/greet',
+      testName: 'TestGreet',
+      runs: 3,
+      failures: 1,
     },
   ])
 })

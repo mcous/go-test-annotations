@@ -14,4 +14,4 @@ inputs:
 
 runs:
   using: node20
-  main: action.js
+  main: dist/main.js

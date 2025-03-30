@@ -1,24 +1,31 @@
-import type { TestEvent } from './test-event.js'
+import type { TestEvent } from './test-report.js'
 
-type TestStatus = 'unknown' | 'fail'
+/** A map of all packages in the suite by the package name. */
+type SuiteSummary = Map<string, PackageSummary>
 
-type PackagesByName = Map<string, TestsByName>
+/** A map of all tests in a package by the test name. */
+type PackageSummary = Map<string, TestSummary>
 
-type TestsByName = Map<string, TestSummary>
-
-interface SuiteSummary {
-  packages: PackagesByName
-}
+/** The summary of an individual test or parent test. */
 interface TestSummary {
-  status: TestStatus
+  status: 'unknown' | 'fail'
   output: string[]
 }
 
-const createSuiteSummary = (): SuiteSummary => {
-  return { packages: new Map() }
+/** Given a stream of test events, create a summary of failing tests in the suite. */
+const createSuiteSummary = async (
+  testEvents: AsyncIterable<TestEvent>,
+): Promise<SuiteSummary> => {
+  const summary: SuiteSummary = new Map()
+
+  for await (const event of testEvents) {
+    addEventToSummary(summary, event)
+  }
+
+  return summary
 }
 
-const createTestsByName = (): TestsByName => {
+const createPackageSummary = (): PackageSummary => {
   return new Map()
 }
 
@@ -41,12 +48,11 @@ const addEventToSummary = (
     return summary
   }
 
-  const { packages } = summary
-  const packageTests = packages.get(packageName) ?? createTestsByName()
-  const testSummary = packageTests.get(testName) ?? createTestSummary()
+  const packageSummary = summary.get(packageName) ?? createPackageSummary()
+  const testSummary = packageSummary.get(testName) ?? createTestSummary()
 
-  packages.set(packageName, packageTests)
-  packageTests.set(testName, testSummary)
+  summary.set(packageName, packageSummary)
+  packageSummary.set(testName, testSummary)
 
   if (action === 'run') {
     testSummary.output.push('')
@@ -59,7 +65,7 @@ const addEventToSummary = (
 
   if (testSummary.status === 'unknown' && action) {
     if (action === 'pass' || action === 'skip') {
-      packageTests.delete(testName)
+      packageSummary.delete(testName)
     } else if (action === 'fail') {
       testSummary.status = 'fail'
     }
@@ -69,10 +75,8 @@ const addEventToSummary = (
 }
 
 export {
-  addEventToSummary,
   createSuiteSummary,
-  type PackagesByName,
+  type PackageSummary,
   type SuiteSummary,
-  type TestsByName,
-  type TestStatus,
+  type TestSummary,
 }
