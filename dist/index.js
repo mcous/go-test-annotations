@@ -19889,7 +19889,7 @@ var joinOutput = (allRunsOutput) => {
   const outputWithTitles = allRunsOutput.map(
     (output, index) => `Run ${index + 1} of ${runs}${import_node_os.default.EOL}${output}`
   );
-  return outputWithTitles.join(import_node_os.default.EOL + import_node_os.default.EOL);
+  return outputWithTitles.join(import_node_os.default.EOL);
 };
 
 // src/log.ts

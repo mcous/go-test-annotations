@@ -83,7 +83,7 @@ const joinOutput = (allRunsOutput: string[]): string => {
     (output, index) => `Run ${index + 1} of ${runs}${os.EOL}${output}`,
   )
 
-  return outputWithTitles.join(os.EOL + os.EOL)
+  return outputWithTitles.join(os.EOL)
 }
 
 export { getAnnotations }

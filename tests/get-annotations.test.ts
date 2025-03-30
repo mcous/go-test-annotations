@@ -129,7 +129,6 @@ it('logs multiple runs', () => {
   expect(result[0]?.message.split(os.EOL)).toEqual([
     'Run 1 of 2',
     'hello',
-    '',
     'Run 2 of 2',
     'world',
   ])
