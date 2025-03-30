@@ -8,52 +8,17 @@ it('creates an empty summary', () => {
   expect(result).toEqual({ packages: new Map() })
 })
 
-it('adds package to the summary', () => {
-  let result = Subject.createSuiteSummary()
-  result = Subject.addEventToSummary(result, { Package: 'greet' })
-
-  expect(result).toEqual({
-    packages: new Map([
-      ['greet', { status: 'unknown', output: '', tests: new Map() }],
-    ]),
-  })
-})
-
 it('adds test to the summary', () => {
   let result = Subject.createSuiteSummary()
   result = Subject.addEventToSummary(result, {
     Package: 'greet',
     Test: 'wave',
+    Action: 'run',
   })
 
   expect(result).toEqual({
     packages: new Map([
-      [
-        'greet',
-        {
-          status: 'unknown',
-          output: '',
-          tests: new Map([['wave', { status: 'unknown', output: '' }]]),
-        },
-      ],
-    ]),
-  })
-})
-
-it('collects package-level output', () => {
-  let result = Subject.createSuiteSummary()
-  result = Subject.addEventToSummary(result, {
-    Package: 'greet',
-    Output: 'hello',
-  })
-  result = Subject.addEventToSummary(result, {
-    Package: 'greet',
-    Output: 'world',
-  })
-
-  expect(result).toEqual({
-    packages: new Map([
-      ['greet', { status: 'unknown', output: 'helloworld', tests: new Map() }],
+      ['greet', new Map([['wave', { status: 'unknown', output: [''] }]])],
     ]),
   })
 })
@@ -75,19 +40,13 @@ it('collects test-level output', () => {
     packages: new Map([
       [
         'greet',
-        {
-          status: 'unknown',
-          output: '',
-          tests: new Map([
-            ['wave', { status: 'unknown', output: 'helloworld' }],
-          ]),
-        },
+        new Map([['wave', { status: 'unknown', output: ['helloworld'] }]]),
       ],
     ]),
   })
 })
 
-it('removes test on pass', () => {
+it.each(['pass', 'skip'] as const)('removes test on %s', (action) => {
   let result = Subject.createSuiteSummary()
   result = Subject.addEventToSummary(result, {
     Package: 'greet',
@@ -97,43 +56,11 @@ it('removes test on pass', () => {
   result = Subject.addEventToSummary(result, {
     Package: 'greet',
     Test: 'wave',
-    Action: 'pass',
-  })
-
-  expect(result).toEqual({
-    packages: new Map([
-      ['greet', { status: 'unknown', output: '', tests: new Map() }],
-    ]),
-  })
-})
-
-it.each(['pass', 'skip'] as const)('removes package on %s', (action) => {
-  let result = Subject.createSuiteSummary()
-  result = Subject.addEventToSummary(result, {
-    Package: 'greet',
-    Output: 'hello',
-  })
-  result = Subject.addEventToSummary(result, {
-    Package: 'greet',
     Action: action,
   })
 
   expect(result).toEqual({
-    packages: new Map(),
-  })
-})
-
-it('marks package as failed', () => {
-  let result = Subject.createSuiteSummary()
-  result = Subject.addEventToSummary(result, {
-    Package: 'greet',
-    Action: 'fail',
-  })
-
-  expect(result).toEqual({
-    packages: new Map([
-      ['greet', { status: 'fail', output: '', tests: new Map() }],
-    ]),
+    packages: new Map([['greet', new Map()]]),
   })
 })
 
@@ -147,39 +74,7 @@ it('marks test as failed', () => {
 
   expect(result).toEqual({
     packages: new Map([
-      [
-        'greet',
-        {
-          status: 'unknown',
-          output: '',
-          tests: new Map([['wave', { status: 'fail', output: '' }]]),
-        },
-      ],
-    ]),
-  })
-})
-
-it('does not delete a failed package, even if it passes later', () => {
-  let result = Subject.createSuiteSummary()
-  result = Subject.addEventToSummary(result, {
-    Package: 'greet',
-    Action: 'fail',
-  })
-  result = Subject.addEventToSummary(result, {
-    Package: 'greet',
-    Action: 'pass',
-  })
-
-  expect(result).toEqual({
-    packages: new Map([
-      [
-        'greet',
-        {
-          status: 'fail',
-          output: '',
-          tests: new Map(),
-        },
-      ],
+      ['greet', new Map([['wave', { status: 'fail', output: [] }]])],
     ]),
   })
 })
@@ -199,13 +94,39 @@ it('does not delete a failed test, even if it passes later', () => {
 
   expect(result).toEqual({
     packages: new Map([
+      ['greet', new Map([['wave', { status: 'fail', output: [] }]])],
+    ]),
+  })
+})
+
+it('adds a new entry to output if test re-runs', () => {
+  let result = Subject.createSuiteSummary()
+  result = Subject.addEventToSummary(result, {
+    Package: 'greet',
+    Test: 'wave',
+    Action: 'run',
+  })
+  result = Subject.addEventToSummary(result, {
+    Package: 'greet',
+    Test: 'wave',
+    Output: 'hello',
+  })
+  result = Subject.addEventToSummary(result, {
+    Package: 'greet',
+    Test: 'wave',
+    Action: 'run',
+  })
+  result = Subject.addEventToSummary(result, {
+    Package: 'greet',
+    Test: 'wave',
+    Output: 'world',
+  })
+
+  expect(result).toEqual({
+    packages: new Map([
       [
         'greet',
-        {
-          status: 'unknown',
-          output: '',
-          tests: new Map([['wave', { status: 'fail', output: '' }]]),
-        },
+        new Map([['wave', { status: 'unknown', output: ['hello', 'world'] }]]),
       ],
     ]),
   })

@@ -1,3 +1,5 @@
+import os from 'node:os'
+
 import { expect, it } from 'vitest'
 
 import * as Subject from '../src/get-annotations.js'
@@ -10,57 +12,18 @@ it('returns empty array for empty summary', () => {
   expect(result).toEqual([])
 })
 
-it('gets annotation for package failure', () => {
-  const summary = createSuiteSummary()
-  summary.packages.set('github.com/owner/repo/greet', {
-    status: 'fail',
-    output: 'oh no!',
-    tests: new Map(),
-  })
-  const result = Subject.getAnnotations(summary, [])
-
-  expect(result).toEqual([
-    {
-      title: 'FAIL: github.com/owner/repo/greet',
-      message: 'oh no!',
-      level: 'error',
-    },
-  ])
-})
-
 it('gets annotation for a test failure', () => {
   const summary = createSuiteSummary()
-  summary.packages.set('github.com/owner/repo/greet', {
-    status: 'unknown',
-    output: '',
-    tests: new Map([['wave', { status: 'fail', output: 'oh no!' }]]),
-  })
+  summary.packages.set(
+    'github.com/owner/repo/greet',
+    new Map([['wave', { status: 'fail', output: ['oh no!'] }]]),
+  )
   const result = Subject.getAnnotations(summary, [])
 
   expect(result).toEqual([
     {
       title: 'FAIL: github.com/owner/repo/greet.wave',
       message: 'oh no!',
-      level: 'error',
-    },
-  ])
-})
-
-it('extracts a test file from a package output', () => {
-  const summary = createSuiteSummary()
-  summary.packages.set('github.com/owner/repo/greet', {
-    status: 'fail',
-    output: 'omg failing_test.go:1337 failed!',
-    tests: new Map(),
-  })
-  const result = Subject.getAnnotations(summary, [])
-
-  expect(result).toEqual([
-    {
-      title: 'FAIL: github.com/owner/repo/greet',
-      file: 'greet/failing_test.go',
-      startLine: 1337,
-      message: 'omg failing_test.go:1337 failed!',
       level: 'error',
     },
   ])
@@ -68,13 +31,15 @@ it('extracts a test file from a package output', () => {
 
 it('extracts a test file from a test output', () => {
   const summary = createSuiteSummary()
-  summary.packages.set('github.com/owner/repo/greet', {
-    status: 'unknown',
-    output: '',
-    tests: new Map([
-      ['wave', { status: 'fail', output: 'omg failing_test.go:1337 failed!' }],
+  summary.packages.set(
+    'github.com/owner/repo/greet',
+    new Map([
+      [
+        'wave',
+        { status: 'fail', output: ['omg failing_test.go:1337 failed!'] },
+      ],
     ]),
-  })
+  )
   const result = Subject.getAnnotations(summary, [])
 
   expect(result).toEqual([
@@ -88,30 +53,17 @@ it('extracts a test file from a test output', () => {
   ])
 })
 
-it('ignores package output without a failed status', () => {
-  const summary = createSuiteSummary()
-  summary.packages.set('github.com/owner/repo/greet', {
-    status: 'unknown',
-    output: 'omg failing_test.go:1337 failed!',
-    tests: new Map(),
-  })
-  const result = Subject.getAnnotations(summary, [])
-
-  expect(result).toEqual([])
-})
-
 it('ignores test output without a failed status', () => {
   const summary = createSuiteSummary()
-  summary.packages.set('github.com/owner/repo/greet', {
-    status: 'unknown',
-    output: '',
-    tests: new Map([
+  summary.packages.set(
+    'github.com/owner/repo/greet',
+    new Map([
       [
         'wave',
-        { status: 'unknown', output: 'omg failing_test.go:1337 failed!' },
+        { status: 'unknown', output: ['omg failing_test.go:1337 failed!'] },
       ],
     ]),
-  })
+  )
   const result = Subject.getAnnotations(summary, [])
 
   expect(result).toEqual([])
@@ -119,11 +71,11 @@ it('ignores test output without a failed status', () => {
 
 it('adds FLAKY TEST to the title if test failed but rerun passed', () => {
   const summary = createSuiteSummary()
-  summary.packages.set('github.com/owner/repo/greet', {
-    status: 'unknown',
-    output: '',
-    tests: new Map([['wave', { status: 'fail', output: 'oh no!' }]]),
-  })
+  summary.packages.set(
+    'github.com/owner/repo/greet',
+    new Map([['wave', { status: 'fail', output: ['oh no!'] }]]),
+  )
+
   const result = Subject.getAnnotations(summary, [
     {
       packageName: 'github.com/owner/repo/greet',
@@ -144,11 +96,10 @@ it('adds FLAKY TEST to the title if test failed but rerun passed', () => {
 
 it('uses default title if failure count matches rerun count', () => {
   const summary = createSuiteSummary()
-  summary.packages.set('github.com/owner/repo/greet', {
-    status: 'unknown',
-    output: '',
-    tests: new Map([['wave', { status: 'fail', output: 'oh no!' }]]),
-  })
+  summary.packages.set(
+    'github.com/owner/repo/greet',
+    new Map([['wave', { status: 'fail', output: ['oh no!'] }]]),
+  )
   const result = Subject.getAnnotations(summary, [
     {
       packageName: 'github.com/owner/repo/greet',
@@ -164,5 +115,22 @@ it('uses default title if failure count matches rerun count', () => {
       message: 'oh no!',
       level: 'error',
     },
+  ])
+})
+
+it('logs multiple runs', () => {
+  const summary = createSuiteSummary()
+  summary.packages.set(
+    'github.com/owner/repo/greet',
+    new Map([['wave', { status: 'fail', output: ['hello', 'world'] }]]),
+  )
+  const result = Subject.getAnnotations(summary, [])
+
+  expect(result[0]?.message.split(os.EOL)).toEqual([
+    'Run 1 of 2',
+    'hello',
+    '',
+    'Run 2 of 2',
+    'world',
   ])
 })

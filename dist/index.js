@@ -95,11 +95,11 @@ var require_command = __commonJS({
     };
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.issue = exports2.issueCommand = void 0;
-    var os3 = __importStar(require("os"));
+    var os4 = __importStar(require("os"));
     var utils_1 = require_utils();
     function issueCommand(command, properties, message) {
       const cmd = new Command(command, properties, message);
-      process.stdout.write(cmd.toString() + os3.EOL);
+      process.stdout.write(cmd.toString() + os4.EOL);
     }
     exports2.issueCommand = issueCommand;
     function issue(name, message = "") {
@@ -183,7 +183,7 @@ var require_file_command = __commonJS({
     exports2.prepareKeyValueMessage = exports2.issueFileCommand = void 0;
     var crypto = __importStar(require("crypto"));
     var fs3 = __importStar(require("fs"));
-    var os3 = __importStar(require("os"));
+    var os4 = __importStar(require("os"));
     var utils_1 = require_utils();
     function issueFileCommand(command, message) {
       const filePath = process.env[`GITHUB_${command}`];
@@ -193,7 +193,7 @@ var require_file_command = __commonJS({
       if (!fs3.existsSync(filePath)) {
         throw new Error(`Missing file at path: ${filePath}`);
       }
-      fs3.appendFileSync(filePath, `${(0, utils_1.toCommandValue)(message)}${os3.EOL}`, {
+      fs3.appendFileSync(filePath, `${(0, utils_1.toCommandValue)(message)}${os4.EOL}`, {
         encoding: "utf8"
       });
     }
@@ -207,7 +207,7 @@ var require_file_command = __commonJS({
       if (convertedValue.includes(delimiter)) {
         throw new Error(`Unexpected input: value should not contain the delimiter "${delimiter}"`);
       }
-      return `${key}<<${delimiter}${os3.EOL}${convertedValue}${os3.EOL}${delimiter}`;
+      return `${key}<<${delimiter}${os4.EOL}${convertedValue}${os4.EOL}${delimiter}`;
     }
     exports2.prepareKeyValueMessage = prepareKeyValueMessage;
   }
@@ -18939,7 +18939,7 @@ var require_toolrunner = __commonJS({
     };
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.argStringToArray = exports2.ToolRunner = void 0;
-    var os3 = __importStar(require("os"));
+    var os4 = __importStar(require("os"));
     var events = __importStar(require("events"));
     var child = __importStar(require("child_process"));
     var path2 = __importStar(require("path"));
@@ -18994,12 +18994,12 @@ var require_toolrunner = __commonJS({
       _processLineBuffer(data, strBuffer, onLine) {
         try {
           let s = strBuffer + data.toString();
-          let n = s.indexOf(os3.EOL);
+          let n = s.indexOf(os4.EOL);
           while (n > -1) {
             const line = s.substring(0, n);
             onLine(line);
-            s = s.substring(n + os3.EOL.length);
-            n = s.indexOf(os3.EOL);
+            s = s.substring(n + os4.EOL.length);
+            n = s.indexOf(os4.EOL);
           }
           return s;
         } catch (err) {
@@ -19168,7 +19168,7 @@ var require_toolrunner = __commonJS({
             }
             const optionsNonNull = this._cloneExecOptions(this.options);
             if (!optionsNonNull.silent && optionsNonNull.outStream) {
-              optionsNonNull.outStream.write(this._getCommandString(optionsNonNull) + os3.EOL);
+              optionsNonNull.outStream.write(this._getCommandString(optionsNonNull) + os4.EOL);
             }
             const state = new ExecState(optionsNonNull, this.toolPath);
             state.on("debug", (message) => {
@@ -19656,7 +19656,7 @@ var require_core = __commonJS({
     var command_1 = require_command();
     var file_command_1 = require_file_command();
     var utils_1 = require_utils();
-    var os3 = __importStar(require("os"));
+    var os4 = __importStar(require("os"));
     var path2 = __importStar(require("path"));
     var oidc_utils_1 = require_oidc_utils();
     var ExitCode;
@@ -19724,7 +19724,7 @@ Support boolean input list: \`true | True | TRUE | false | False | FALSE\``);
       if (filePath) {
         return (0, file_command_1.issueFileCommand)("OUTPUT", (0, file_command_1.prepareKeyValueMessage)(name, value));
       }
-      process.stdout.write(os3.EOL);
+      process.stdout.write(os4.EOL);
       (0, command_1.issueCommand)("set-output", { name }, (0, utils_1.toCommandValue)(value));
     }
     exports2.setOutput = setOutput;
@@ -19758,7 +19758,7 @@ Support boolean input list: \`true | True | TRUE | false | False | FALSE\``);
     }
     exports2.notice = notice2;
     function info(message) {
-      process.stdout.write(message + os3.EOL);
+      process.stdout.write(message + os4.EOL);
     }
     exports2.info = info;
     function startGroup(name) {
@@ -19832,23 +19832,15 @@ __export(index_exports, {
 module.exports = __toCommonJS(index_exports);
 
 // src/get-annotations.ts
+var import_node_os = __toESM(require("os"));
 var import_node_path = __toESM(require("path"));
 var GITHUB_REPO_RE = /^github\.com\/[^/]+\/[^/]+\//u;
 var FILENAME_RE = /(?<filename>\S+_test.go):(?<lineNumber>\d+)/iu;
 var getAnnotations = (suiteSummary, reruns) => {
   const annotations = [];
-  for (const [packageName, packageSummary] of suiteSummary.packages) {
+  for (const [packageName, testsByName] of suiteSummary.packages) {
     const packagePath = getPackagePath(packageName);
-    const packageAnnotation = getAnnotationFromOutput(
-      packageName,
-      packagePath,
-      packageSummary.status,
-      packageSummary.output
-    );
-    if (packageAnnotation) {
-      annotations.push(packageAnnotation);
-    }
-    for (const [testName, testSummary] of packageSummary.tests) {
+    for (const [testName, testSummary] of testsByName) {
       const rerun = reruns.find(
         (r) => r.packageName === packageName && r.testName === testName
       );
@@ -19869,10 +19861,11 @@ var getAnnotations = (suiteSummary, reruns) => {
 var getPackagePath = (packageName) => {
   return packageName.replace(GITHUB_REPO_RE, "");
 };
-var getAnnotationFromOutput = (name, packagePath, status, output, rerun = void 0) => {
+var getAnnotationFromOutput = (name, packagePath, status, allRunsOutput, rerun = void 0) => {
   if (status !== "fail") {
     return void 0;
   }
+  const output = joinOutput(allRunsOutput);
   const heading = rerun && rerun.runs !== rerun.failures ? "FLAKY" : "FAIL";
   const filenameMatch = FILENAME_RE.exec(output);
   const filename = filenameMatch?.groups?.filename;
@@ -19888,6 +19881,16 @@ var getAnnotationFromOutput = (name, packagePath, status, output, rerun = void 0
   }
   return annotation;
 };
+var joinOutput = (allRunsOutput) => {
+  if (allRunsOutput.length === 1) {
+    return allRunsOutput.join("");
+  }
+  const runs = allRunsOutput.length;
+  const outputWithTitles = allRunsOutput.map(
+    (output, index) => `Run ${index + 1} of ${runs}${import_node_os.default.EOL}${output}`
+  );
+  return outputWithTitles.join(import_node_os.default.EOL + import_node_os.default.EOL);
+};
 
 // src/log.ts
 var import_core = __toESM(require_core());
@@ -19899,7 +19902,7 @@ var annotate = (annotation) => {
 
 // src/read-events.ts
 var import_node_fs = __toESM(require("fs"));
-var import_node_os = __toESM(require("os"));
+var import_node_os2 = __toESM(require("os"));
 var import_node_stream = __toESM(require("stream"));
 var readEvents = (testReport) => {
   return import_node_fs.default.createReadStream(testReport).pipe(new SplitJSONLines());
@@ -19911,7 +19914,7 @@ var SplitJSONLines = class extends import_node_stream.default.Transform {
     this.buffer = "";
   }
   _transform(chunk, _encoding, callback) {
-    const lines = (this.buffer + chunk.toString()).split(import_node_os.default.EOL);
+    const lines = (this.buffer + chunk.toString()).split(import_node_os2.default.EOL);
     this.buffer = lines.pop() ?? "";
     for (const line of lines) {
       const [error2, data] = parseLine(line);
@@ -19943,14 +19946,14 @@ var parseLine = (line) => {
 
 // src/read-rerun-report.ts
 var import_promises = __toESM(require("fs/promises"));
-var import_node_os2 = __toESM(require("os"));
+var import_node_os3 = __toESM(require("os"));
 var RERUN_RE = /^(?<packageName>[\w./]+)\.(?<testName>[\w./]+): (?<runs>\d+) runs, (?<failures>\d+) failures$/;
 var readRerunReport = async (rerunReport) => {
   if (rerunReport === "") {
     return [];
   }
   const report = await import_promises.default.readFile(rerunReport, "utf8");
-  return report.split(import_node_os2.default.EOL).flatMap((line) => {
+  return report.split(import_node_os3.default.EOL).flatMap((line) => {
     const groups = RERUN_RE.exec(line.trim())?.groups ?? {};
     const { packageName, testName, runs, failures } = groups;
     return packageName && testName && runs && failures ? {
@@ -19966,11 +19969,11 @@ var readRerunReport = async (rerunReport) => {
 var createSuiteSummary = () => {
   return { packages: /* @__PURE__ */ new Map() };
 };
-var createPackageSummary = () => {
-  return { status: "unknown", output: "", tests: /* @__PURE__ */ new Map() };
+var createTestsByName = () => {
+  return /* @__PURE__ */ new Map();
 };
 var createTestSummary = () => {
-  return { status: "unknown", output: "" };
+  return { status: "unknown", output: [] };
 };
 var addEventToSummary = (summary, event) => {
   const {
@@ -19979,37 +19982,26 @@ var addEventToSummary = (summary, event) => {
     Output: output,
     Action: action
   } = event ?? {};
-  let packageSummary;
-  let testSummary;
-  if (packageName) {
-    packageSummary = summary.packages.get(packageName) ?? createPackageSummary();
-    summary.packages.set(packageName, packageSummary);
-  }
-  if (packageSummary && testName) {
-    testSummary = packageSummary.tests.get(testName) ?? createTestSummary();
-    packageSummary.tests.set(testName, testSummary);
-  }
-  if (!packageName || !packageSummary) {
+  if (!packageName || !testName) {
     return summary;
   }
-  if (output) {
-    if (testSummary) {
-      testSummary.output += output;
-    } else {
-      packageSummary.output += output;
-    }
+  const { packages } = summary;
+  const packageTests = packages.get(packageName) ?? createTestsByName();
+  const testSummary = packageTests.get(testName) ?? createTestSummary();
+  packages.set(packageName, packageTests);
+  packageTests.set(testName, testSummary);
+  if (action === "run") {
+    testSummary.output.push("");
   }
-  if (action === "pass" || action === "skip") {
-    if (testName && testSummary?.status !== "fail") {
-      packageSummary.tests.delete(testName);
-    } else if (!testName && packageSummary.status !== "fail") {
-      summary.packages.delete(packageName);
-    }
-  } else if (action === "fail") {
-    if (testSummary) {
+  if (output) {
+    const previousOutput = testSummary.output.pop() ?? "";
+    testSummary.output.push(previousOutput + output);
+  }
+  if (testSummary.status === "unknown" && action) {
+    if (action === "pass" || action === "skip") {
+      packageTests.delete(testName);
+    } else if (action === "fail") {
       testSummary.status = "fail";
-    } else {
-      packageSummary.status = "fail";
     }
   }
   return summary;

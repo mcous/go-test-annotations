@@ -2,31 +2,28 @@ import type { TestEvent } from './test-event.js'
 
 type TestStatus = 'unknown' | 'fail'
 
+type PackagesByName = Map<string, TestsByName>
+
+type TestsByName = Map<string, TestSummary>
+
 interface SuiteSummary {
-  packages: Map<string, PackageSummary>
+  packages: PackagesByName
 }
-
-interface PackageSummary {
-  status: TestStatus
-  output: string
-  tests: Map<string, TestSummary>
-}
-
 interface TestSummary {
   status: TestStatus
-  output: string
+  output: string[]
 }
 
 const createSuiteSummary = (): SuiteSummary => {
   return { packages: new Map() }
 }
 
-const createPackageSummary = (): PackageSummary => {
-  return { status: 'unknown', output: '', tests: new Map() }
+const createTestsByName = (): TestsByName => {
+  return new Map()
 }
 
 const createTestSummary = (): TestSummary => {
-  return { status: 'unknown', output: '' }
+  return { status: 'unknown', output: [] }
 }
 
 const addEventToSummary = (
@@ -39,42 +36,32 @@ const addEventToSummary = (
     Output: output,
     Action: action,
   } = event ?? {}
-  let packageSummary: PackageSummary | undefined
-  let testSummary: TestSummary | undefined
 
-  if (packageName) {
-    packageSummary = summary.packages.get(packageName) ?? createPackageSummary()
-    summary.packages.set(packageName, packageSummary)
-  }
-
-  if (packageSummary && testName) {
-    testSummary = packageSummary.tests.get(testName) ?? createTestSummary()
-    packageSummary.tests.set(testName, testSummary)
-  }
-
-  if (!packageName || !packageSummary) {
+  if (!packageName || !testName) {
     return summary
   }
 
-  if (output) {
-    if (testSummary) {
-      testSummary.output += output
-    } else {
-      packageSummary.output += output
-    }
+  const { packages } = summary
+  const packageTests = packages.get(packageName) ?? createTestsByName()
+  const testSummary = packageTests.get(testName) ?? createTestSummary()
+
+  packages.set(packageName, packageTests)
+  packageTests.set(testName, testSummary)
+
+  if (action === 'run') {
+    testSummary.output.push('')
   }
 
-  if (action === 'pass' || action === 'skip') {
-    if (testName && testSummary?.status !== 'fail') {
-      packageSummary.tests.delete(testName)
-    } else if (!testName && packageSummary.status !== 'fail') {
-      summary.packages.delete(packageName)
-    }
-  } else if (action === 'fail') {
-    if (testSummary) {
+  if (output) {
+    const previousOutput = testSummary.output.pop() ?? ''
+    testSummary.output.push(previousOutput + output)
+  }
+
+  if (testSummary.status === 'unknown' && action) {
+    if (action === 'pass' || action === 'skip') {
+      packageTests.delete(testName)
+    } else if (action === 'fail') {
       testSummary.status = 'fail'
-    } else {
-      packageSummary.status = 'fail'
     }
   }
 
@@ -84,8 +71,8 @@ const addEventToSummary = (
 export {
   addEventToSummary,
   createSuiteSummary,
-  type PackageSummary,
+  type PackagesByName,
   type SuiteSummary,
+  type TestsByName,
   type TestStatus,
-  type TestSummary,
 }

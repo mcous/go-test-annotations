@@ -1,3 +1,4 @@
+import os from 'node:os'
 import path from 'node:path'
 
 import type { Annotation } from './annotation.js'
@@ -13,20 +14,10 @@ const getAnnotations = (
 ): Annotation[] => {
   const annotations: Annotation[] = []
 
-  for (const [packageName, packageSummary] of suiteSummary.packages) {
+  for (const [packageName, testsByName] of suiteSummary.packages) {
     const packagePath = getPackagePath(packageName)
-    const packageAnnotation = getAnnotationFromOutput(
-      packageName,
-      packagePath,
-      packageSummary.status,
-      packageSummary.output,
-    )
 
-    if (packageAnnotation) {
-      annotations.push(packageAnnotation)
-    }
-
-    for (const [testName, testSummary] of packageSummary.tests) {
+    for (const [testName, testSummary] of testsByName) {
       const rerun = reruns.find(
         (r) => r.packageName === packageName && r.testName === testName,
       )
@@ -56,13 +47,14 @@ const getAnnotationFromOutput = (
   name: string,
   packagePath: string,
   status: TestStatus,
-  output: string,
+  allRunsOutput: string[],
   rerun: Rerun | undefined = undefined,
 ): Annotation | undefined => {
   if (status !== 'fail') {
     return undefined
   }
 
+  const output = joinOutput(allRunsOutput)
   const heading = rerun && rerun.runs !== rerun.failures ? 'FLAKY' : 'FAIL'
   const filenameMatch = FILENAME_RE.exec(output)
   const filename = filenameMatch?.groups?.filename
@@ -79,6 +71,19 @@ const getAnnotationFromOutput = (
   }
 
   return annotation
+}
+
+const joinOutput = (allRunsOutput: string[]): string => {
+  if (allRunsOutput.length === 1) {
+    return allRunsOutput.join('')
+  }
+
+  const runs = allRunsOutput.length
+  const outputWithTitles = allRunsOutput.map(
+    (output, index) => `Run ${index + 1} of ${runs}${os.EOL}${output}`,
+  )
+
+  return outputWithTitles.join(os.EOL + os.EOL)
 }
 
 export { getAnnotations }
