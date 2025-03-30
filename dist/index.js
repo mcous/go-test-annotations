@@ -19952,7 +19952,16 @@ var readRerunReport = async (rerunReport) => {
   if (rerunReport === "") {
     return [];
   }
-  const report = await import_promises.default.readFile(rerunReport, "utf8");
+  let report;
+  try {
+    report = await import_promises.default.readFile(rerunReport, "utf8");
+  } catch (error2) {
+    if (error2 instanceof Error && "code" in error2 && error2.code === "ENOENT") {
+      report = "";
+    } else {
+      throw error2;
+    }
+  }
   return report.split(import_node_os3.default.EOL).flatMap((line) => {
     const groups = RERUN_RE.exec(line.trim())?.groups ?? {};
     const { packageName, testName, runs, failures } = groups;

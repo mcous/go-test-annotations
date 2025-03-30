@@ -16,7 +16,17 @@ const readRerunReport = async (rerunReport: string): Promise<Rerun[]> => {
     return []
   }
 
-  const report = await fs.readFile(rerunReport, 'utf8')
+  let report: string
+
+  try {
+    report = await fs.readFile(rerunReport, 'utf8')
+  } catch (error) {
+    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+      report = ''
+    } else {
+      throw error
+    }
+  }
 
   return report.split(os.EOL).flatMap((line) => {
     const groups = RERUN_RE.exec(line.trim())?.groups ?? {}

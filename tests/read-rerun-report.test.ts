@@ -19,6 +19,12 @@ it('does nothing if input path is empty', async () => {
   expect(result).toEqual([])
 })
 
+it('does nothing if input file does not exist', async () => {
+  const result = await Subject.readRerunReport('nope.txt')
+
+  expect(result).toEqual([])
+})
+
 it('reads empty file', async ({ temporaryFile }) => {
   await fs.writeFile(temporaryFile, '', 'utf8')
   const result = await Subject.readRerunReport(temporaryFile)
