@@ -20,7 +20,7 @@
   "author": "Michael Cousins <michael@cousins.io> (https://michael.cousins.io)",
   "type": "commonjs",
   "scripts": {
-    "all": "pnpm run build && pnpm run check && pnpm run format && pnpm run test:once",
+    "all": "pnpm run check && pnpm run format && pnpm run test:once && pnpm run build",
     "build": "esbuild src/main.ts --bundle --format=cjs --platform=node --target=node20 --outdir=dist",
     "check": "tsc",
     "format": "eslint . --fix && prettier . --write",

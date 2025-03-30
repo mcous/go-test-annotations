@@ -1,0 +1,23 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  main:
+    name: All checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Install Node.js, pnpm, and dependencies
+        uses: mcous/js/actions/setup@5f58238fd9ec0c0de22d803153af70239bfbdc9c
+
+      - name: Run all checks
+        run: pnpm run all
+
+      - name: Verify no changes
+        run: git diff --exit-code
