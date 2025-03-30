@@ -1,8 +1,9 @@
 import fs from 'node:fs'
+import os from 'node:os'
 import stream from 'node:stream'
 
-const readEvents = (resultsPath: string): AsyncIterable<unknown> => {
-  return fs.createReadStream(resultsPath).pipe(new SplitJSONLines())
+const readEvents = (testReport: string): AsyncIterable<unknown> => {
+  return fs.createReadStream(testReport).pipe(new SplitJSONLines())
 }
 
 class SplitJSONLines extends stream.Transform {
@@ -18,7 +19,7 @@ class SplitJSONLines extends stream.Transform {
     _encoding: BufferEncoding,
     callback: stream.TransformCallback,
   ) {
-    const lines = (this.buffer + chunk.toString()).split('\n')
+    const lines = (this.buffer + chunk.toString()).split(os.EOL)
     this.buffer = lines.pop() ?? ''
 
     for (const line of lines) {

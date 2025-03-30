@@ -158,3 +158,55 @@ it('marks test as failed', () => {
     ]),
   })
 })
+
+it('does not delete a failed package, even if it passes later', () => {
+  let result = Subject.createSuiteSummary()
+  result = Subject.addEventToSummary(result, {
+    Package: 'greet',
+    Action: 'fail',
+  })
+  result = Subject.addEventToSummary(result, {
+    Package: 'greet',
+    Action: 'pass',
+  })
+
+  expect(result).toEqual({
+    packages: new Map([
+      [
+        'greet',
+        {
+          status: 'fail',
+          output: '',
+          tests: new Map(),
+        },
+      ],
+    ]),
+  })
+})
+
+it('does not delete a failed test, even if it passes later', () => {
+  let result = Subject.createSuiteSummary()
+  result = Subject.addEventToSummary(result, {
+    Package: 'greet',
+    Test: 'wave',
+    Action: 'fail',
+  })
+  result = Subject.addEventToSummary(result, {
+    Package: 'greet',
+    Test: 'wave',
+    Action: 'pass',
+  })
+
+  expect(result).toEqual({
+    packages: new Map([
+      [
+        'greet',
+        {
+          status: 'unknown',
+          output: '',
+          tests: new Map([['wave', { status: 'fail', output: '' }]]),
+        },
+      ],
+    ]),
+  })
+})

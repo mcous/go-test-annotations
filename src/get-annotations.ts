@@ -1,12 +1,16 @@
 import path from 'node:path'
 
 import type { Annotation } from './annotation.js'
+import type { Rerun } from './read-rerun-report.js'
 import type { SuiteSummary, TestStatus } from './suite-summary.js'
 
 const GITHUB_REPO_RE = /^github\.com\/[^/]+\/[^/]+\//u
 const FILENAME_RE = /(?<filename>\S+_test.go):(?<lineNumber>\d+)/iu
 
-const getAnnotations = (suiteSummary: SuiteSummary): Annotation[] => {
+const getAnnotations = (
+  suiteSummary: SuiteSummary,
+  reruns: Rerun[],
+): Annotation[] => {
   const annotations: Annotation[] = []
 
   for (const [packageName, packageSummary] of suiteSummary.packages) {
@@ -23,11 +27,16 @@ const getAnnotations = (suiteSummary: SuiteSummary): Annotation[] => {
     }
 
     for (const [testName, testSummary] of packageSummary.tests) {
+      const rerun = reruns.find(
+        (r) => r.packageName === packageName && r.testName === testName,
+      )
+
       const testAnnotation = getAnnotationFromOutput(
-        `${packageName} | ${testName}`,
+        `${packageName}.${testName}`,
         packagePath,
         testSummary.status,
         testSummary.output,
+        rerun,
       )
 
       if (testAnnotation) {
@@ -48,16 +57,18 @@ const getAnnotationFromOutput = (
   packagePath: string,
   status: TestStatus,
   output: string,
+  rerun: Rerun | undefined = undefined,
 ): Annotation | undefined => {
   if (status !== 'fail') {
     return undefined
   }
 
+  const heading = rerun && rerun.runs !== rerun.failures ? 'FLAKY' : 'FAIL'
   const filenameMatch = FILENAME_RE.exec(output)
   const filename = filenameMatch?.groups?.filename
   const lineNumber = filenameMatch?.groups?.lineNumber
   const annotation: Annotation = {
-    title: name,
+    title: `${heading}: ${name}`,
     message: output,
     level: 'error',
   }

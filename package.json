@@ -5,7 +5,8 @@
   "description": "Add annotations from `go test` to your GitHub Actions workflow runs",
   "keywords": [
     "ci",
-    "golang"
+    "golang",
+    "gotestsum"
   ],
   "homepage": "https://github.com/mcous/go-test-annotations#readme",
   "bugs": {

@@ -1,10 +1,10 @@
 # Go test annotations
 
-Add annotations from `go test` to a GitHub Actions workflow run using the [`test2json`][test2json] output.
-
-[test2json]: https://pkg.go.dev/cmd/test2json
+Add annotations from `go test` and `gotestsum` to a GitHub Actions workflow run.
 
 ## Usage
+
+### `go test`
 
 ```yaml
 on:
@@ -21,12 +21,38 @@ jobs:
         with:
           go-version: '1.24'
 
-      - name: Run tests
-        run: go test -json ./... > test.json
+      - run: go test -json ./... > test.json
 
-      - name: Annotate tests
-        if: ${{ !cancelled() }
+      - if: ${{ !cancelled() }
         uses: mcous/go-test-annotations@v1
+        with:
+          test-report: test.json
+```
+
+### `gotestsum`
+
+```yaml
+on:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+
+      - run: gotestsum --jsonfile=test.json --rerun-fails ---rerun-fails-report=rerun-fails.txt --packages=./...
+
+      - if: ${{ !cancelled() }
+        uses: mcous/go-test-annotations@v1
+        with:
+          test-report: test.json
+          rerun-fails-report: rerun-fails.txt
 ```
 
 ## Options
@@ -34,9 +60,11 @@ jobs:
 ```yaml
 - uses: mcous/go-test-annotations@v1
   with:
-    test-results: test.json
+    test-report: test.json
+    rerun-fails-report: rerun-fails.txt
 ```
 
-| name           | default     |
-| -------------- | ----------- |
-| `test-results` | `test.json` |
+| name                 | default     | description                                          |
+| -------------------- | ----------- | ---------------------------------------------------- |
+| `test-report`        | `test.json` | Path to test report file from `go test -json`        |
+| `rerun-fails-report` | N/A         | Path to re-run report from `gotestsum --rerun-fails` |

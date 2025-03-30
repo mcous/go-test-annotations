@@ -52,24 +52,28 @@ const addEventToSummary = (
     packageSummary.tests.set(testName, testSummary)
   }
 
+  if (!packageName || !packageSummary) {
+    return summary
+  }
+
   if (output) {
     if (testSummary) {
       testSummary.output += output
-    } else if (packageSummary) {
+    } else {
       packageSummary.output += output
     }
   }
 
   if (action === 'pass' || action === 'skip') {
-    if (packageSummary && testName) {
+    if (testName && testSummary?.status !== 'fail') {
       packageSummary.tests.delete(testName)
-    } else if (packageName) {
+    } else if (!testName && packageSummary.status !== 'fail') {
       summary.packages.delete(packageName)
     }
   } else if (action === 'fail') {
     if (testSummary) {
       testSummary.status = 'fail'
-    } else if (packageSummary) {
+    } else {
       packageSummary.status = 'fail'
     }
   }

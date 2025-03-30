@@ -1,18 +1,39 @@
 import { getAnnotations } from './get-annotations.js'
 import { annotate, log } from './log.js'
 import { readEvents } from './read-events.js'
-import { addEventToSummary, createSuiteSummary } from './suite-summary.js'
+import { readRerunReport } from './read-rerun-report.js'
+import {
+  addEventToSummary,
+  createSuiteSummary,
+  type SuiteSummary,
+} from './suite-summary.js'
 import { parseTestEvent } from './test-event.js'
 
 interface GoTestAnnotationOptions {
-  testResults: string
+  testReport: string
+  rerunFailsReport: string
 }
 
-const goTestAnnotations = async (
-  options: GoTestAnnotationOptions,
-): Promise<void> => {
-  const rawEvents = readEvents(options.testResults)
-  let testSummary = createSuiteSummary()
+const goTestAnnotations = async ({
+  testReport,
+  rerunFailsReport,
+}: GoTestAnnotationOptions): Promise<void> => {
+  const [suiteSummary, reruns] = await Promise.all([
+    buildSuiteSummary(readEvents(testReport)),
+    readRerunReport(rerunFailsReport),
+  ])
+
+  const annotations = getAnnotations(suiteSummary, reruns)
+
+  for (const annotation of annotations) {
+    annotate(annotation)
+  }
+}
+
+const buildSuiteSummary = async (
+  rawEvents: AsyncIterable<unknown>,
+): Promise<SuiteSummary> => {
+  let summary = createSuiteSummary()
 
   for await (const rawEvent of rawEvents) {
     const [error, event] = parseTestEvent(rawEvent)
@@ -21,14 +42,10 @@ const goTestAnnotations = async (
       log.debug(`Unexpected error parsing test event: ${error}`)
     }
 
-    testSummary = addEventToSummary(testSummary, event)
+    summary = addEventToSummary(summary, event)
   }
 
-  const annotations = getAnnotations(testSummary)
-
-  for (const annotation of annotations) {
-    annotate(annotation)
-  }
+  return summary
 }
 
 export { type GoTestAnnotationOptions, goTestAnnotations }

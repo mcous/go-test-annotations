@@ -1,8 +1,9 @@
 export { getInput, setFailed } from '@actions/core';
 
 interface GoTestAnnotationOptions {
-    testResults: string;
+    testReport: string;
+    rerunFailsReport: string;
 }
-declare const goTestAnnotations: (options: GoTestAnnotationOptions) => Promise<void>;
+declare const goTestAnnotations: ({ testReport, rerunFailsReport, }: GoTestAnnotationOptions) => Promise<void>;
 
 export { type GoTestAnnotationOptions, goTestAnnotations };
