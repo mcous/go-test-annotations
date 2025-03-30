@@ -56,16 +56,18 @@ const getAnnotationFromOutput = (
   const filenameMatch = FILENAME_RE.exec(output)
   const filename = filenameMatch?.groups?.filename
   const lineNumber = filenameMatch?.groups?.lineNumber
+  const annotation: Annotation = {
+    title: name,
+    message: output,
+    level: 'error',
+  }
 
-  return filename && lineNumber
-    ? {
-        title: name,
-        file: path.join(packagePath, filename),
-        startLine: Number(lineNumber),
-        message: output,
-        level: 'error',
-      }
-    : undefined
+  if (filename && lineNumber) {
+    annotation.file = path.join(packagePath, filename)
+    annotation.startLine = Number(lineNumber)
+  }
+
+  return annotation
 }
 
 export { getAnnotations }

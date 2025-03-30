@@ -10,6 +10,42 @@ it('returns empty array for empty summary', () => {
   expect(result).toEqual([])
 })
 
+it('gets annotation for package failure', () => {
+  const summary = createSuiteSummary()
+  summary.packages.set('github.com/owner/repo/greet', {
+    status: 'fail',
+    output: 'oh no!',
+    tests: new Map(),
+  })
+  const result = Subject.getAnnotations(summary)
+
+  expect(result).toEqual([
+    {
+      title: 'github.com/owner/repo/greet',
+      message: 'oh no!',
+      level: 'error',
+    },
+  ])
+})
+
+it('gets annotation for a test failure', () => {
+  const summary = createSuiteSummary()
+  summary.packages.set('github.com/owner/repo/greet', {
+    status: 'unknown',
+    output: '',
+    tests: new Map([['wave', { status: 'fail', output: 'oh no!' }]]),
+  })
+  const result = Subject.getAnnotations(summary)
+
+  expect(result).toEqual([
+    {
+      title: 'github.com/owner/repo/greet | wave',
+      message: 'oh no!',
+      level: 'error',
+    },
+  ])
+})
+
 it('extracts a test file from a package output', () => {
   const summary = createSuiteSummary()
   summary.packages.set('github.com/owner/repo/greet', {
